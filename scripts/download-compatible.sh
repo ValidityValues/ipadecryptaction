@@ -140,7 +140,8 @@ for external_id in "${VERSION_IDS[@]}"; do
       --app-id "$APP_ID" \
       --platform iphone \
       --external-version-id "$external_id" \
-      --output "$candidate"; then
+      --output "$candidate" \
+      --purchase; then
     echo "::warning::Download failed for external version ID $external_id; trying the next older version."
     continue
   fi
