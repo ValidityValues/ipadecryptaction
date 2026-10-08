@@ -69,3 +69,9 @@ Example metadata:
   "ipatool_version": "2.6.0"
 }
 ```
+
+## No-login mode
+
+The repository also has **Resolve App Store app (no Apple ID)**. It accepts the same App Store URL and target iOS version, but only uses Apple's public iTunes Lookup metadata. It can tell you whether the **current** App Store listing is compatible with that iOS version.
+
+It cannot retrieve an arbitrary historical App Store binary without authentication. Apple's authenticated App Store download flow is still used by **Download compatible App Store IPA** for exact historical version selection.
