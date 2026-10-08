@@ -92,3 +92,6 @@ The workflow uses Apple's public Lookup endpoint only to resolve the App Store I
 This mode does **not** log into Apple and does **not** download the binary from Apple's authenticated App Store endpoint. The resulting package comes from the configured public source and can be modified or unsigned.
 
 For example, the public WuXu library currently contains `com.google.ios.youtube` and publishes IPA download URLs together with iOS compatibility metadata. citeturn968806search0
+
+
+The no-login downloader now scans the built-in public source catalog in parallel, supports both modern AltStore `downloadURL` records and IPA Library/PlayCover-style `link` + `bundleID` records, and falls back to IPA Dump when all JSON-source candidates fail. PlayCover's source model uses `bundleID`, `version`, and `link` for this older IPA Library format. citeturn117261search0turn952718search0
