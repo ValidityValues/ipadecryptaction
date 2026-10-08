@@ -15,6 +15,7 @@ https://altstorepal.fullcodes.thatfinn.dev/repo.json
 https://apk.wxio.site/PALSource02.json
 https://app.bmverse.bruu.eu
 https://appfair.net/altstore.json
+https://apptesters.org/altstore/
 https://as.nnsnodnb.moe/source.pal.json
 https://bit.ly/40Isul6
 https://bit.ly/Altstore-complete
@@ -72,8 +73,8 @@ https://wuxu1.github.io
 https://www.appfair.net/fairapps-ios.json
 https://www.cranci.tech/PAL.json
 https://xitrix.github.io/iTorrent/AltStoreEU.json
-https://decrypt.day/library/data.json
 https://raw.githubusercontent.com/asdfzxcvbn/apptesters-repo/main/apps.json
 https://raw.githubusercontent.com/wacns/Repo-AppTesters/main/apps.json
-https://raw.githubusercontent.com/Geczy/Repo/main/apps.json
-https://raw.githubusercontent.com/danransmile/Repo/main/apps.json
+https://raw.githubusercontent.com/swaggyP36000/TrollStore-IPAs/main/apps_esign.json
+https://raw.githubusercontent.com/Neoncat-OG/TrollStore-IPAs/main/apps_esign.json
+https://wuxu1.github.io/wuxu-complete-plus.json
