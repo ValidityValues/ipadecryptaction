@@ -222,8 +222,46 @@ if bash "$GITHUB_WORKSPACE/scripts/download-legacystore.sh" "$APP_ID" "$TARGET_I
   if [[ -s "$legacy_dir/candidates.json" ]]; then
     legacy_count="$(jq length "$legacy_dir/candidates.json")"
     echo "Legacy Store candidates: $legacy_count"
-    jq -s 'add | unique_by(.version,.downloadURL) |
-      sort_by([.version,.date,.buildVersion]) | reverse'       "$work/candidates.json" "$legacy_dir/candidates.json" > "$work/candidates.merged.json"
+    python3 - "$work/candidates.json" "$legacy_dir/candidates.json" "$work/candidates.merged.json" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+inputs = sys.argv[1:-1]
+output = sys.argv[-1]
+
+def version(value):
+    parts=[int(x) for x in re.findall(r"\d+", str(value or ""))]
+    parts += [0] * (8-len(parts))
+    return tuple(parts[:8])
+
+merged=[]
+seen=set()
+
+for path in inputs:
+    data=json.loads(Path(path).read_text(encoding="utf-8"))
+    for item in data:
+        key=(item.get("version",""),item.get("downloadURL",""))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+
+merged.sort(
+    key=lambda x:(
+        version(x.get("version")),
+        x.get("date",""),
+        version(x.get("buildVersion")),
+    ),
+    reverse=True,
+)
+
+Path(output).write_text(
+    json.dumps(merged,ensure_ascii=False,indent=2),
+    encoding="utf-8",
+)
+PY
     mv "$work/candidates.merged.json" "$work/candidates.json"
   fi
 else
