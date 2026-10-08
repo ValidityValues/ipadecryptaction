@@ -1,0 +1,41 @@
+name: Download compatible IPA (no Apple ID)
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_store_url:
+        description: "App Store URL, for example https://apps.apple.com/.../id123456789"
+        required: true
+        type: string
+      ios_version:
+        description: "Target iOS version, for example 16.5.1"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    env:
+      APP_STORE_URL: ${{ inputs.app_store_url }}
+      TARGET_IOS: ${{ inputs.ios_version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Find compatible public IPA
+        shell: bash
+        run: bash scripts/download-public.sh
+
+      - name: Upload IPA and metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-compatible-ipa
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7
