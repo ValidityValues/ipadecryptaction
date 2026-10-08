@@ -1,0 +1,45 @@
+name: Download compatible App Store IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_store_url:
+        description: "App Store URL, for example https://apps.apple.com/.../id123456789"
+        required: true
+        type: string
+      ios_version:
+        description: "Target iOS version, for example 16.5.1"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    env:
+      APP_STORE_URL: ${{ inputs.app_store_url }}
+      TARGET_IOS: ${{ inputs.ios_version }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_AUTH_CODE: ${{ secrets.APPLE_AUTH_CODE }}
+      IPATOOL_KEYCHAIN_PASSPHRASE: ${{ secrets.IPATOOL_KEYCHAIN_PASSPHRASE }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download newest IPA compatible with target iOS
+        shell: bash
+        run: ./scripts/download-compatible.sh
+
+      - name: Upload IPA and metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatible-ipa
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7
