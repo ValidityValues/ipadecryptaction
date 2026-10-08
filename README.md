@@ -75,3 +75,20 @@ Example metadata:
 The repository also has **Resolve App Store app (no Apple ID)**. It accepts the same App Store URL and target iOS version, but only uses Apple's public iTunes Lookup metadata. It can tell you whether the **current** App Store listing is compatible with that iOS version.
 
 It cannot retrieve an arbitrary historical App Store binary without authentication. Apple's authenticated App Store download flow is still used by **Download compatible App Store IPA** for exact historical version selection.
+
+
+## No-Apple-ID IPA download
+
+Use **Actions → Download compatible IPA (no Apple ID)**.
+
+Inputs:
+
+- **App Store URL**
+- **Target iOS**
+- **AltStore source JSON URLs** (optional; a default set is already provided)
+
+The workflow uses Apple's public Lookup endpoint only to resolve the App Store ID to a Bundle ID. It then searches the configured AltStore-compatible JSON sources for that Bundle ID, filters versions whose `minOSVersion` is compatible with the requested iOS, chooses the newest candidate, downloads it, and verifies the Bundle ID and `MinimumOSVersion` from the IPA's actual `Info.plist`.
+
+This mode does **not** log into Apple and does **not** download the binary from Apple's authenticated App Store endpoint. The resulting package comes from the configured public source and can be modified or unsigned.
+
+For example, the public WuXu library currently contains `com.google.ios.youtube` and publishes IPA download URLs together with iOS compatibility metadata. citeturn968806search0
