@@ -103,3 +103,4 @@ https://aio.yippee.rip/repo.json
 https://repo.whoeevee.com/esign
 https://raw.githubusercontent.com/Auties00/Artemis/refs/heads/main/source.json
 https://raw.githubusercontent.com/TheNightmanCodeth/chromium-ios/master/altstore-source.json
+https://repository.apptesters.org/
