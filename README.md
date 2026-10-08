@@ -95,3 +95,10 @@ For example, the public WuXu library currently contains `com.google.ios.youtube`
 
 
 The no-login downloader now scans the built-in public source catalog in parallel, supports both modern AltStore `downloadURL` records and IPA Library/PlayCover-style `link` + `bundleID` records, and falls back to IPA Dump when all JSON-source candidates fail. PlayCover's source model uses `bundleID`, `version`, and `link` for this older IPA Library format. citeturn117261search0turn952718search0
+
+
+### Reliability notes
+
+The no-login workflow now uses a layered resolver: a current public AltStore-source catalog, the built-in source catalog, Legacy Store's public read-only API, and a final archive fallback. Legacy Store exposes app version trees and direct binary links without authentication; an `installable` copy means the archive already has a runnable/decrypted binary. Its catalog currently covers about 60,000 apps and 113,000 versions. citeturn177872view0turn396071search1
+
+No public-source workflow can honestly provide a 100% availability guarantee: repositories disappear, binaries are removed, and third-party archives can be incomplete. The workflow therefore treats every external source as optional and continues to the next layer on failure.
