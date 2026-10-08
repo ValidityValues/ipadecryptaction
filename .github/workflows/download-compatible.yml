@@ -34,7 +34,7 @@ jobs:
 
       - name: Download newest IPA compatible with target iOS
         shell: bash
-        run: ./scripts/download-compatible.sh
+        run: bash scripts/download-compatible.sh
 
       - name: Upload IPA and metadata
         uses: actions/upload-artifact@v4
