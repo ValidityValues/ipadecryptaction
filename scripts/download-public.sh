@@ -53,31 +53,43 @@ import json,re,sys,urllib.request
 from pathlib import Path
 
 bundle,target,source_file,out_file=sys.argv[1:]
-urls=Path(source_file).read_text().split()
+urls=Path(source_file).read_text(encoding="utf-8").split()
 
 def v(s):
     nums=[int(x) for x in re.findall(r"\d+",str(s or ""))]
     return tuple((nums+[0]*8)[:8])
 
-def ok_min(s):
-    return bool(s) and v(s)<=v(target)
+def compatible(minos):
+    return not minos or v(minos)<=v(target)
 
-def apps(obj):
+def iter_apps(obj):
     if isinstance(obj,dict):
-        if isinstance(obj.get("apps"),list):
-            for x in obj["apps"]:
-                if isinstance(x,dict): yield x
-        for x in obj.values():
-            if isinstance(x,(dict,list)): yield from apps(x)
+        identity = obj.get("bundleIdentifier") or obj.get("bundleID") or obj.get("bundleId")
+        has_package = obj.get("downloadURL") or obj.get("link")
+        if identity and (has_package or obj.get("versions")):
+            yield obj
+
+        for key in ("apps","data"):
+            value=obj.get(key)
+            if isinstance(value,(dict,list)):
+                yield from iter_apps(value)
+
+        for value in obj.values():
+            if isinstance(value,(dict,list)):
+                yield from iter_apps(value)
+
     elif isinstance(obj,list):
-        for x in obj:
-            if isinstance(x,(dict,list)): yield from apps(x)
+        for value in obj:
+            if isinstance(value,(dict,list)):
+                yield from iter_apps(value)
 
 candidates=[]
 seen=set()
 
 for src_i,url in enumerate(urls):
-    if not url: continue
+    if not url:
+        continue
+
     try:
         req=urllib.request.Request(url,headers={"User-Agent":"ipadecryptaction/1.0"})
         with urllib.request.urlopen(req,timeout=30) as r:
@@ -86,35 +98,58 @@ for src_i,url in enumerate(urls):
         print(f"::warning::Source failed: {url}: {e}")
         continue
 
-    for app in apps(data):
-        if str(app.get("bundleIdentifier","")).strip()!=bundle:
+    for app in iter_apps(data):
+        app_bundle=str(
+            app.get("bundleIdentifier")
+            or app.get("bundleID")
+            or app.get("bundleId")
+            or ""
+        ).strip()
+
+        if app_bundle!=bundle:
             continue
 
-        vs=app.get("versions")
-        if not isinstance(vs,list):
-            vs=[]
-        if app.get("downloadURL"):
-            vs=[app,*vs]
+        versions=app.get("versions")
+        if not isinstance(versions,list):
+            versions=[]
 
-        for item in vs:
-            if not isinstance(item,dict): continue
-            dl=str(item.get("downloadURL","")).strip()
-            ver=str(item.get("version","")).strip()
-            minos=str(item.get("minOSVersion") or item.get("minimumOSVersion") or app.get("minOSVersion") or app.get("minimumOSVersion") or "").strip()
-            if not dl or not ver or not ok_min(minos): continue
+        if app.get("downloadURL") or app.get("link"):
+            versions=[app,*versions]
+
+        for item in versions:
+            if not isinstance(item,dict):
+                continue
+
+            dl=str(item.get("downloadURL") or item.get("link") or "").strip()
+            ver=str(item.get("version") or item.get("bundleVersion") or "").strip()
+            minos=str(
+                item.get("minOSVersion")
+                or item.get("minimumOSVersion")
+                or item.get("minOS")
+                or app.get("minOSVersion")
+                or app.get("minimumOSVersion")
+                or app.get("minOS")
+                or ""
+            ).strip()
+
+            if not dl or not ver or not compatible(minos):
+                continue
+
             key=(ver,dl)
-            if key in seen: continue
+            if key in seen:
+                continue
             seen.add(key)
+
             candidates.append({
-                "name":str(app.get("name","") or ""),
+                "name":str(app.get("name") or "").strip(),
                 "bundleIdentifier":bundle,
                 "version":ver,
-                "buildVersion":str(item.get("buildVersion","") or ""),
-                "date":str(item.get("date","") or ""),
+                "buildVersion":str(item.get("buildVersion") or item.get("build") or "").strip(),
+                "date":str(item.get("date") or item.get("versionDate") or "").strip(),
                 "minOSVersion":minos,
                 "downloadURL":dl,
                 "source":url,
-                "sourceIndex":src_i,
+                "sourceIndex":src_i
             })
 
 candidates.sort(
@@ -122,12 +157,15 @@ candidates.sort(
     reverse=True
 )
 
-Path(out_file).write_text(json.dumps(candidates,ensure_ascii=False,indent=2),encoding="utf-8")
+Path(out_file).write_text(
+    json.dumps(candidates,ensure_ascii=False,indent=2),
+    encoding="utf-8"
+)
+
 print(f"Found {len(candidates)} compatible candidates")
 for x in candidates[:10]:
-    print(f"- {x['version']} (min iOS {x['minOSVersion']}) from {x['source']}")
+    print(f"- {x['version']} (min iOS {x['minOSVersion'] or 'unknown'}) from {x['source']}")
 PY
-
 count="$(jq length "$work/candidates.json")"
 [[ "$count" != "0" ]] || {
   echo "::error::No compatible IPA found in the configured public AltStore sources."
