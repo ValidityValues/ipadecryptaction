@@ -14,7 +14,7 @@ on:
       source_urls:
         description: "AltStore source JSON URLs, separated by spaces"
         required: false
-        default: "https://wuxu1.github.io/wuxu-complete-plus.json https://raw.githubusercontent.com/qnblackcat/AltStore/gh-pages/apps.json https://raw.githubusercontent.com/arichornloverALT/arichornloveralt.github.io/main/apps.json"
+        default: "https://wuxu1.github.io/wuxu-complete-plus.json https://raw.githubusercontent.com/arichornlover/arichornlover.github.io/main/apps.json https://raw.githubusercontent.com/YTLitePlus/YTLitePlus-Altstore/main/apps.json https://raw.githubusercontent.com/jiz4oh/IPAs/master/apps.json https://raw.githubusercontent.com/bunduuk/altstore-source/master/apps.json"
         type: string
 
 permissions:
