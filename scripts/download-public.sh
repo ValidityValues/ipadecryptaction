@@ -35,7 +35,18 @@ BUNDLE_ID="${meta[1]:-}"
 APP_STORE_LINK="${meta[2]:-$APP_STORE_URL}"
 [[ -n "$BUNDLE_ID" ]] || { echo "::error::Bundle ID not found"; exit 1; }
 
-printf '%s\n' "$SOURCE_URLS" > "$work/sources.txt"
+if [[ -n "${SOURCE_URLS//[[:space:]]/}" ]]; then
+  printf '%s\n' "$SOURCE_URLS" > "$work/sources-extra.txt"
+else
+  : > "$work/sources-extra.txt"
+fi
+
+{
+  cat "$GITHUB_WORKSPACE/config/public-sources.txt"
+  cat "$work/sources-extra.txt"
+} | tr '[:space:]' '\n' | sed '/^$/d' | awk '!seen[$0]++' > "$work/sources.txt"
+
+echo "Checking $(wc -l < "$work/sources.txt") public sources..."
 
 python3 - "$BUNDLE_ID" "$TARGET_IOS" "$work/sources.txt" "$work/candidates.json" <<'PY'
 import json,re,sys,urllib.request
