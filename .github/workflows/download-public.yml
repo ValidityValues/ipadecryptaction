@@ -1,40 +1,43 @@
-name: Resolve App Store app (no Apple ID)
+name: Download compatible IPA (no Apple ID)
 
 on:
   workflow_dispatch:
     inputs:
       app_store_url:
-        description: "App Store URL, for example https://apps.apple.com/.../id123456789"
+        description: "App Store URL"
         required: true
         type: string
       ios_version:
-        description: "Target iOS version, for example 16.5.1"
+        description: "Target iOS version, for example 16.6.1"
         required: true
+        type: string
+      source_urls:
+        description: "AltStore source JSON URLs, separated by spaces"
+        required: false
+        default: "https://wuxu1.github.io/wuxu-complete-plus.json https://raw.githubusercontent.com/qnblackcat/AltStore/gh-pages/apps.json https://raw.githubusercontent.com/arichornloverALT/arichornloveralt.github.io/main/apps.json"
         type: string
 
 permissions:
   contents: read
 
 jobs:
-  resolve:
+  download:
     runs-on: ubuntu-24.04
-
+    timeout-minutes: 45
     env:
       APP_STORE_URL: ${{ inputs.app_store_url }}
       TARGET_IOS: ${{ inputs.ios_version }}
-
+      SOURCE_URLS: ${{ inputs.source_urls }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Resolve public App Store metadata
-        shell: bash
-        run: bash scripts/resolve-public.sh
+      - name: Download compatible public IPA
+        run: bash scripts/download-public.sh
 
-      - name: Upload metadata
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: app-store-metadata
+          name: public-compatible-ipa
           path: artifacts/
           if-no-files-found: error
           retention-days: 7
