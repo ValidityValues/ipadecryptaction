@@ -44,6 +44,30 @@ fi
 {
   cat "$GITHUB_WORKSPACE/config/public-sources.txt"
   cat "$work/sources-extra.txt"
+
+  echo "::group::Refreshing public source catalog"
+  if curl -fsSL --retry 3 --retry-all-errors --max-time 30 \
+      "https://raw.githubusercontent.com/victordedomenico/awesome-altstore/main/README.md" \
+      -o "$work/awesome-altstore.md"; then
+    python3 - "$work/awesome-altstore.md" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+text=Path(sys.argv[1]).read_text(encoding="utf-8",errors="replace")
+for url in re.findall(r'\]\((https?://[^)\s]+)\)', text):
+    if url.startswith(("https://awesome.re","http://awesome.re")):
+        continue
+    if "reddit.com/" in url:
+        continue
+    if "explore.alt.store" in url or "altsource.by.lao.sb" in url:
+        continue
+    print(url)
+PY
+  else
+    echo "::warning::Could not refresh Awesome AltStore catalog; using bundled catalog."
+  fi
+  echo "::endgroup::"
 } | tr '[:space:]' '\n' | sed '/^$/d' | awk '!seen[$0]++' > "$work/sources.txt"
 
 echo "Checking $(wc -l < "$work/sources.txt") public sources..."
@@ -191,8 +215,25 @@ for x in candidates[:15]:
 PY
 count="$(jq length "$work/candidates.json")"
 echo "AltStore/SideStore candidates: $count"
+
+legacy_dir="$work/legacy"
+mkdir -p "$legacy_dir"
+if bash "$GITHUB_WORKSPACE/scripts/download-legacystore.sh" "$APP_ID" "$TARGET_IOS" "$legacy_dir"; then
+  if [[ -s "$legacy_dir/candidates.json" ]]; then
+    legacy_count="$(jq length "$legacy_dir/candidates.json")"
+    echo "Legacy Store candidates: $legacy_count"
+    jq -s 'add | unique_by(.version,.downloadURL) |
+      sort_by([.version,.date,.buildVersion]) | reverse'       "$work/candidates.json" "$legacy_dir/candidates.json" > "$work/candidates.merged.json"
+    mv "$work/candidates.merged.json" "$work/candidates.json"
+  fi
+else
+  echo "::warning::Legacy Store lookup unavailable for App Store ID $APP_ID."
+fi
+
+count="$(jq length "$work/candidates.json")"
+echo "Total compatible candidates after Legacy Store: $count"
 if [[ "$count" == "0" ]]; then
-  echo "::warning::No compatible candidate found in JSON sources; trying IPA Dump fallback."
+  echo "::warning::No compatible candidate found in JSON sources or Legacy Store; trying IPA Dump fallback."
 fi
 
 candidate="$work/candidate.ipa"
