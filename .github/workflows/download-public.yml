@@ -23,7 +23,7 @@ permissions:
 jobs:
   download:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       APP_STORE_URL: ${{ inputs.app_store_url }}
       TARGET_IOS: ${{ inputs.ios_version }}
