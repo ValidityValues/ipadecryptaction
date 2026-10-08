@@ -36,7 +36,7 @@ import re
 import sys
 
 value = sys.argv[1]
-if not re.fullmatch(r"\\d+(?:\\.\\d+){0,3}", value):
+if not re.fullmatch(r"\d+(?:\.\d+){0,3}", value):
     raise SystemExit("invalid iOS version")
 PY
 then
@@ -108,15 +108,6 @@ fi
 
 echo "Found ${#VERSION_IDS[@]} App Store version identifiers."
 echo "Trying newest-to-oldest until MinimumOSVersion <= $TARGET_IOS."
-
-version_tuple() {
-  python3 - "$1" <<'PY'
-import sys
-parts = [int(x) for x in sys.argv[1].split(".")]
-parts += [0] * (4 - len(parts))
-print(".".join(f"{x:04d}" for x in parts[:4]))
-PY
-}
 
 is_compatible() {
   python3 - "$TARGET_IOS" "$1" <<'PY'
