@@ -89,7 +89,7 @@ for src_i,url in enumerate(urls):
             if not isinstance(item,dict): continue
             dl=str(item.get("downloadURL","")).strip()
             ver=str(item.get("version","")).strip()
-            minos=str(item.get("minOSVersion","") or "").strip()
+            minos=str(item.get("minOSVersion") or item.get("minimumOSVersion") or app.get("minOSVersion") or app.get("minimumOSVersion") or "").strip()
             if not dl or not ver or not ok_min(minos): continue
             key=(ver,dl)
             if key in seen: continue
