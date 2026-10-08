@@ -50,6 +50,7 @@ echo "Checking $(wc -l < "$work/sources.txt") public sources..."
 
 python3 - "$BUNDLE_ID" "$TARGET_IOS" "$work/sources.txt" "$work/candidates.json" <<'PY'
 import json,re,sys,urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 bundle,target,source_file,out_file=sys.argv[1:]
@@ -64,8 +65,8 @@ def compatible(minos):
 
 def iter_apps(obj):
     if isinstance(obj,dict):
-        identity = obj.get("bundleIdentifier") or obj.get("bundleID") or obj.get("bundleId")
-        has_package = obj.get("downloadURL") or obj.get("link")
+        identity=obj.get("bundleIdentifier") or obj.get("bundleID") or obj.get("bundleId")
+        has_package=obj.get("downloadURL") or obj.get("link")
         if identity and (has_package or obj.get("versions")):
             yield obj
 
@@ -83,19 +84,29 @@ def iter_apps(obj):
             if isinstance(value,(dict,list)):
                 yield from iter_apps(value)
 
+def fetch_source(src):
+    try:
+        req=urllib.request.Request(
+            src,
+            headers={"User-Agent":"ipadecryptaction/1.0"}
+        )
+        with urllib.request.urlopen(req,timeout=20) as response:
+            return src,json.loads(response.read()),None
+    except Exception as exc:
+        return src,None,str(exc)
+
+source_results=[]
+with ThreadPoolExecutor(max_workers=12) as pool:
+    futures=[pool.submit(fetch_source,url) for url in urls if url]
+    for future in as_completed(futures):
+        source_results.append(future.result())
+
 candidates=[]
 seen=set()
 
-for src_i,url in enumerate(urls):
-    if not url:
-        continue
-
-    try:
-        req=urllib.request.Request(url,headers={"User-Agent":"ipadecryptaction/1.0"})
-        with urllib.request.urlopen(req,timeout=30) as r:
-            data=json.loads(r.read())
-    except Exception as e:
-        print(f"::warning::Source failed: {url}: {e}")
+for url,data,error in source_results:
+    if error:
+        print(f"::warning::Source failed: {url}: {error}")
         continue
 
     for app in iter_apps(data):
@@ -144,12 +155,20 @@ for src_i,url in enumerate(urls):
                 "name":str(app.get("name") or "").strip(),
                 "bundleIdentifier":bundle,
                 "version":ver,
-                "buildVersion":str(item.get("buildVersion") or item.get("build") or "").strip(),
-                "date":str(item.get("date") or item.get("versionDate") or "").strip(),
+                "buildVersion":str(
+                    item.get("buildVersion")
+                    or item.get("build")
+                    or ""
+                ).strip(),
+                "date":str(
+                    item.get("date")
+                    or item.get("versionDate")
+                    or ""
+                ).strip(),
                 "minOSVersion":minos,
                 "downloadURL":dl,
                 "source":url,
-                "sourceIndex":src_i
+                "sourceIndex":urls.index(url) if url in urls else 999999
             })
 
 candidates.sort(
@@ -163,8 +182,12 @@ Path(out_file).write_text(
 )
 
 print(f"Found {len(candidates)} compatible candidates")
-for x in candidates[:10]:
-    print(f"- {x['version']} (min iOS {x['minOSVersion'] or 'unknown'}) from {x['source']}")
+for x in candidates[:15]:
+    print(
+        f"- {x['version']} "
+        f"(min iOS {x['minOSVersion'] or 'unknown'}) "
+        f"from {x['source']}"
+    )
 PY
 count="$(jq length "$work/candidates.json")"
 [[ "$count" != "0" ]] || {
