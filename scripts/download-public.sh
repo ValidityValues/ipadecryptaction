@@ -150,7 +150,7 @@ while IFS= read -r row; do
     [[ -n "$info_path" ]] || { echo "::warning::Not a normal IPA"; continue; }
     unzip -p "$candidate" "$info_path" > "$plist"
 
-    readarray -t actual < <(python3 "$plist" <<'PY'
+    readarray -t actual < <(python3 - "$plist" <<'PY'
 import plistlib,sys
 with open(sys.argv[1],"rb") as f: d=plistlib.load(f)
 print(str(d.get("CFBundleIdentifier","")).strip())
