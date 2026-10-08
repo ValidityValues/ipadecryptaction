@@ -242,11 +242,19 @@ PY
 
     python3 - "$TARGET_IOS" "$actual_min" <<'PY'
 import sys
+
 def v(s):
+    if not s:
+        return None
     p=[int(x) for x in s.split(".")]
     p += [0]*(4-len(p))
     return tuple(p[:4])
-raise SystemExit(0 if v(sys.argv[2])<=v(sys.argv[1]) else 1)
+
+target=v(sys.argv[1])
+minimum=v(sys.argv[2])
+
+if minimum is not None and minimum > target:
+    raise SystemExit(1)
 PY
 
     selected_version="$actual_version"
