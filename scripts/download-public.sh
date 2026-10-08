@@ -190,11 +190,10 @@ for x in candidates[:15]:
     )
 PY
 count="$(jq length "$work/candidates.json")"
-[[ "$count" != "0" ]] || {
-  echo "::error::No compatible IPA found in the configured public AltStore sources."
-  echo "::error::Add a source JSON containing this Bundle ID."
-  exit 1
-}
+echo "AltStore/SideStore candidates: $count"
+if [[ "$count" == "0" ]]; then
+  echo "::warning::No compatible candidate found in JSON sources; trying IPA Dump fallback."
+fi
 
 candidate="$work/candidate.ipa"
 selected_version=""
@@ -258,8 +257,25 @@ PY
     break
 done < <(jq -c '.[]' "$work/candidates.json")
 
+if [[ -z "$selected_version" ]]; then
+  echo "All configured JSON candidates failed. Trying IPA Dump..."
+  fallback_dir="$work/ipadump"
+  mkdir -p "$fallback_dir"
+
+  if bash "$GITHUB_WORKSPACE/scripts/download-ipadump.sh" "$APP_ID" "$TARGET_IOS" "$fallback_dir"; then
+    selected_version="$(jq -r '.version' "$fallback_dir/result.json")"
+    selected_build="$(jq -r '.build' "$fallback_dir/result.json")"
+    selected_min="$(jq -r '.minimum_os_version' "$fallback_dir/result.json")"
+    selected_url="$(jq -r '.download_url' "$fallback_dir/result.json")"
+    selected_source="IPA Dump"
+    cp "$fallback_dir/result.ipa" "$work/candidate.ipa"
+  else
+    echo "::warning::IPA Dump fallback did not return a compatible downloadable IPA."
+  fi
+fi
+
 [[ -n "$selected_version" ]] || {
-  echo "::error::No candidate passed final IPA verification."
+  echo "::error::No compatible IPA could be found in any configured public source."
   exit 1
 }
 
@@ -280,7 +296,7 @@ cat > "$artifacts/metadata.json" <<EOF
   "target_ios": "$TARGET_IOS",
   "source": "$selected_source",
   "download_url": "$selected_url",
-  "package_state": "public AltStore-source IPA"
+  "package_state": "public third-party IPA source"
 }
 EOF
 
@@ -293,8 +309,8 @@ Minimum iOS: $selected_min
 Target iOS: $TARGET_IOS
 Source: $selected_source
 
-This is a public-source IPA, not Apple's authenticated App Store package.
-It may be modified or unsigned.
+This is a public third-party IPA source, not Apple's authenticated App Store package.
+It may be modified, decrypted, repackaged, or unsigned. Verify the source and package before installing it.
 EOF
 
 echo "Selected $APP_NAME $selected_version ($selected_build), minimum iOS $selected_min"
